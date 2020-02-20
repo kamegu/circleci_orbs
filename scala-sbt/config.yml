@@ -1,0 +1,90 @@
+version: "2.1"
+description: |
+  Build sbt project
+orbs:
+  aws-ecr: circleci/aws-ecr@6.7.0
+
+commands:
+  sbt_docker_build_and_push:
+    parameters:
+      sbt_subproject:
+        description: "project name defined in build.sbt"
+        type: string
+      setup_remote_docker:
+        description: >
+          Setup and use CircleCI's remote Docker environment for Docker and
+          docker-compose commands? Not required if using the default executor
+        type: boolean
+        default: true
+      setup_remote_docker_version:
+        description: |
+          Docker version for setup_remote_docker
+          if older than 17.09-ce, chown layer is created and image size will be larger
+          https://docs.docker.com/engine/release-notes/#17090-ce
+        type: string
+        default: "18.06.0-ce"
+      path_from_sbt:
+        description: "sbt"
+        type: boolean
+        default: true
+      path:
+        default: .
+        description: >-
+          Path to the directory containing your Dockerfile and build context.
+          Defaults to . (working directory).
+        type: string
+      repo:
+        description: Name of an Amazon ECR repository
+        type: string
+      tag:
+        default: latest
+        description: >-
+          A comma-separated string containing docker image tags to build and push
+          (default = latest)
+        type: string
+    steps:
+      - when:
+          condition: << parameters.setup_remote_docker >>
+          steps:
+            - setup_remote_docker:
+                version: <<parameters.setup_remote_docker_version>>
+      - run:
+          name: "get docker staging path"
+          command: |
+            if [ <<parameters.path_from_sbt>> ]; then
+              # remove ANSI color codes
+              sbt << parameters.sbt_subproject >>/docker:stagingDirectory | sed -r 's/[[:cntrl:]]\[[0-9]{1,3}m//g' > sbt_result.txt
+              echo "stagingDirectory"
+              cat sbt_result.txt # for debug
+              MY_DOCKER_STAGING_DIRECTORY=`cat sbt_result.txt | tail -n 1`
+              # remove `[info] ` from head of line
+              MY_DOCKER_PATH=`echo ${MY_DOCKER_STAGING_DIRECTORY:7}`
+            else
+              MY_DOCKER_PATH=<<parameters.path>>
+            fi
+            echo "MY_DOCKER_PATH=$MY_DOCKER_PATH"
+            echo "export MY_DOCKER_PATH=$MY_DOCKER_PATH" >> $BASH_ENV
+      - build_dockerfile_with_sbt:
+          sbt_subproject: "<< parameters.sbt_subproject >>"
+      - aws-ecr/build-and-push-image:
+          checkout: false
+          repo: <<parameters.repo>>
+          tag: <<parameters.tag>>
+          path: "$MY_DOCKER_PATH"
+
+  build_dockerfile_with_sbt:
+    parameters:
+      sbt_subproject:
+        description: "project name defined in build.sbt"
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: "build image"
+          command: |
+            if [ "<< parameters.sbt_subproject >>" = "" ]; then
+              cat /dev/null | sbt docker:stage
+            else
+              cat /dev/null | sbt << parameters.sbt_subproject >>/docker:stage
+            fi
+            docker version # for debug
