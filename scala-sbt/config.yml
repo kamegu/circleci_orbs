@@ -3,6 +3,7 @@ description: |
   Build sbt project
 orbs:
   aws-ecr: circleci/aws-ecr@6.7.0 # https://circleci.com/orbs/registry/orb/circleci/aws-ecr?version=6.7.0
+  aws-cli: circleci/aws-cli@0.1.13
 
 commands:
   restore_cache_sbt:
@@ -61,6 +62,10 @@ commands:
       sbt_subproject:
         description: "project name defined in build.sbt"
         type: string
+      setup_aws_ecr:
+        description: setup aws config and ecr-login
+        type: boolean
+        default: true
       setup_remote_docker:
         description: >
           Setup and use CircleCI's remote Docker environment for Docker and
@@ -117,15 +122,27 @@ commands:
             echo "export MY_DOCKER_PATH=$MY_DOCKER_PATH" >> $BASH_ENV
       - build_dockerfile_with_sbt:
           sbt_subproject: "<< parameters.sbt_subproject >>"
-      - aws-ecr/build-and-push-image:
-          checkout: false
+      # extend steps in aws-ecr/build-and-push-image
+      - when:
+          condition: <<parameters.setup_aws_ecr>>
+          steps:
+            - aws-cli/install
+            - aws-cli/configure:
+                aws-access-key-id: <<parameters.aws-access-key-id>>
+                aws-region: <<parameters.region>>
+                aws-secret-access-key: <<parameters.aws-secret-access-key>>
+                profile-name: default
+            - aws-ecr/ecr-login:
+                region: <<parameters.region>>
+      - aws-ecr/build-image:
           account-url: <<parameters.account-url>>
-          aws-access-key-id: <<parameters.aws-access-key-id>>
-          aws-secret-access-key: <<parameters.aws-secret-access-key>>
-          region: <<parameters.region>>
+          path: "$MY_DOCKER_PATH"
           repo: <<parameters.repo>>
           tag: <<parameters.tag>>
-          path: "$MY_DOCKER_PATH"
+      - aws-ecr/push-image:
+          account-url: <<parameters.account-url>>
+          repo: <<parameters.repo>>
+          tag: <<parameters.tag>>
 
   build_dockerfile_with_sbt:
     parameters:
