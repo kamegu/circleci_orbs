@@ -2,11 +2,30 @@ version: "2.1"
 description: |
   Build sbt project
 orbs:
-  aws-ecr: circleci/aws-ecr@6.7.0
+  aws-ecr: circleci/aws-ecr@6.7.0 # https://circleci.com/orbs/registry/orb/circleci/aws-ecr?version=6.7.0
 
 commands:
-  sbt_docker_build_and_push:
+  docker_build_and_push_to_ecr:
+    description: |
+      Build dockerfile from sbt settings (sbt-native-packager is required)
+      and Push Docker-image to AWS ECR with aws-ecr Orb.
     parameters:
+      account-url:
+        default: AWS_ECR_ACCOUNT_URL
+        description: for aws-ecr Orb
+        type: env_var_name
+      aws-access-key-id:
+        default: AWS_ACCESS_KEY_ID
+        description: for aws-ecr Orb
+        type: env_var_name
+      aws-secret-access-key:
+        default: AWS_SECRET_ACCESS_KEY
+        description: for aws-ecr Orb
+        type: env_var_name
+      region:
+        default: AWS_REGION
+        description: for aws-ecr Orb
+        type: env_var_name
       sbt_subproject:
         description: "project name defined in build.sbt"
         type: string
@@ -68,6 +87,10 @@ commands:
           sbt_subproject: "<< parameters.sbt_subproject >>"
       - aws-ecr/build-and-push-image:
           checkout: false
+          account-url: <<parameters.account-url>>
+          aws-access-key-id: <<parameters.aws-access-key-id>>
+          aws-secret-access-key: <<parameters.aws-secret-access-key>>
+          region: <<parameters.region>>
           repo: <<parameters.repo>>
           tag: <<parameters.tag>>
           path: "$MY_DOCKER_PATH"
