@@ -5,6 +5,38 @@ orbs:
   aws-ecr: circleci/aws-ecr@6.7.0 # https://circleci.com/orbs/registry/orb/circleci/aws-ecr?version=6.7.0
 
 commands:
+  restore_cache_sbt:
+    parameters:
+      cache_key_prefix:
+        default: v1
+        type: string
+    steps:
+      - run:
+          name: "create file for cache checksum"
+          command: cat project/*.scala project/*.sbt > .circleci/for_chache.tmp
+      - restore_cache:
+          keys:
+            - <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}-{{ checksum ".circleci/for_chache.tmp" }}
+            # fallback to using the latest cache if no exact match is found
+            - <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}
+            - <<parameters.cache_key_prefix>>-dependencies-
+  save_cache_sbt:
+    parameters:
+      cache_key_prefix:
+        default: v1
+        type: string
+    steps:
+      - run:
+          name: "create file for cache checksum"
+          command: cat project/*.scala project/*.sbt > .circleci/for_chache.tmp
+      - save_cache:
+          paths:
+            - "~/.ivy2/cache"
+            - "~/.sbt"
+            - "~/.m2"
+          key: <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}-{{ checksum ".circleci/for_chache.tmp" }}
+
+
   docker_build_and_push_to_ecr:
     description: |
       Build dockerfile from sbt settings (sbt-native-packager is required)
