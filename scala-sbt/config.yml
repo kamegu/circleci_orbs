@@ -33,6 +33,7 @@ commands:
       - save_cache:
           paths:
             - "~/.ivy2/cache"
+            - "~/.cache/coursier"
             - "~/.sbt"
             - "~/.m2"
           key: <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}-{{ checksum ".circleci/for_chache.tmp" }}
