@@ -14,7 +14,7 @@ commands:
     steps:
       - run:
           name: "create file for cache checksum"
-          command: cat project/*.scala project/*.sbt > .circleci/for_chache.tmp
+          command: cat project/*.scala project/*.sbt project/*.properties > .circleci/for_chache.tmp
       - restore_cache:
           keys:
             - <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}-{{ checksum ".circleci/for_chache.tmp" }}
@@ -29,7 +29,7 @@ commands:
     steps:
       - run:
           name: "create file for cache checksum"
-          command: cat project/*.scala project/*.sbt > .circleci/for_chache.tmp
+          command: cat project/*.scala project/*.sbt project/*.properties > .circleci/for_chache.tmp
       - save_cache:
           paths:
             - "~/.ivy2/cache"
