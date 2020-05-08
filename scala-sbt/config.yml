@@ -2,8 +2,8 @@ version: "2.1"
 description: |
   Build sbt project
 orbs:
-  aws-ecr: circleci/aws-ecr@6.7.0 # https://circleci.com/orbs/registry/orb/circleci/aws-ecr?version=6.7.0
-  aws-cli: circleci/aws-cli@0.1.13
+  aws-ecr: circleci/aws-ecr@6.8.2 # https://circleci.com/orbs/registry/orb/circleci/aws-ecr?version=6.8.2
+  aws-cli: circleci/aws-cli@1.0.0
 
 commands:
   restore_cache_sbt:
@@ -127,8 +127,8 @@ commands:
       - when:
           condition: <<parameters.setup_aws_ecr>>
           steps:
-            - aws-cli/install
-            - aws-cli/configure:
+            - aws-cli/setup:
+                version: '1'
                 aws-access-key-id: <<parameters.aws-access-key-id>>
                 aws-region: <<parameters.region>>
                 aws-secret-access-key: <<parameters.aws-secret-access-key>>
