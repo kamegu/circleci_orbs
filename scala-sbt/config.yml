@@ -11,6 +11,13 @@ commands:
       cache_key_prefix:
         default: v1
         type: string
+      use_circleci_user_home_directory:
+        description: >-
+          If cache is saved by root user, circleci user cannot access and use these directories.
+          So move these directories to circleci user home directory and chmod.
+          https://support.circleci.com/hc/ja/articles/360004250693
+        type: boolean
+        default: false
     steps:
       - run:
           name: "create file for cache checksum"
@@ -21,22 +28,73 @@ commands:
             # fallback to using the latest cache if no exact match is found
             - <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}
             - <<parameters.cache_key_prefix>>-dependencies-
+      - when:
+          condition: << parameters.use_circleci_user_home_directory >>
+          steps:
+            - run:
+                name: move cached directories from /home/circleci
+                command: |
+                  if [ `whoami` != "circleci" ] && [ -e "/home/circleci" ] ; then
+                    echo "move to my home directory"
+                    mkdir -p /home/circleci/.ivy2 /home/circleci/.cache /home/circleci/.sbt /home/circleci/.m2
+                    cp -r /home/circleci/.ivy2 ~/.ivy2
+                    cp -r /home/circleci/.cache ~/.cache
+                    cp -r /home/circleci/.sbt ~/.sbt
+                    cp -r /home/circleci/.m2 ~/.m2
+                  fi
   save_cache_sbt:
     parameters:
       cache_key_prefix:
         default: v1
         type: string
+      use_circleci_user_home_directory:
+        description: >-
+          If cache is saved by root user, circleci user cannot access and use these directories.
+          So move these directories to circleci user home directory and chmod.
+          https://support.circleci.com/hc/ja/articles/360004250693
+        type: boolean
+        default: false
     steps:
       - run:
           name: "create file for cache checksum"
           command: cat project/*.scala project/*.sbt project/*.properties > .circleci/for_chache.tmp
-      - save_cache:
-          paths:
-            - "~/.ivy2/cache"
-            - "~/.cache/coursier"
-            - "~/.sbt"
-            - "~/.m2"
-          key: <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}-{{ checksum ".circleci/for_chache.tmp" }}
+      - when:
+          condition: << parameters.use_circleci_user_home_directory >>
+          steps:
+            - run:
+                name: move cached directories to /home/circleci
+                command: |
+                  if [ `whoami` != "circleci" ]; then
+                    echo "move to circleci user home directory"
+                    mkdir -p ~/.ivy2/cache ~/.cache/coursier ~/.sbt ~/.m2
+                    mkdir -p /home/circleci/.ivy2 /home/circleci/.cache
+                    cp -r ~/.ivy2/cache /home/circleci/.ivy2/cache
+                    cp -r ~/.cache/coursier /home/circleci/.cache/coursier
+                    cp -r ~/.sbt /home/circleci/.sbt
+                    cp -r ~/.m2 /home/circleci/.m2
+                    # chmod cache directories / available for anyone
+                    chmod -R 777 /home/circleci/.ivy2/cache
+                    chmod -R 777 /home/circleci/.cache/coursier
+                    chmod -R 777 /home/circleci/.sbt
+                    chmod -R 777 /home/circleci/.m2
+                  fi
+            - save_cache:
+                paths:
+                  - "/home/circleci/.ivy2/cache"
+                  - "/home/circleci/.cache/coursier"
+                  - "/home/circleci/.sbt"
+                  - "/home/circleci/.m2"
+                key: <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}-{{ checksum ".circleci/for_chache.tmp" }}
+      - unless:
+          condition: << parameters.use_circleci_user_home_directory >>
+          steps:
+            - save_cache:
+                paths:
+                  - "~/.ivy2/cache"
+                  - "~/.cache/coursier"
+                  - "~/.sbt"
+                  - "~/.m2"
+                key: <<parameters.cache_key_prefix>>-dependencies-{{ checksum "build.sbt" }}-{{ checksum ".circleci/for_chache.tmp" }}
 
 
   docker_build_and_push_to_ecr:
