@@ -37,10 +37,10 @@ commands:
                   if [ `whoami` != "circleci" ] && [ -e "/home/circleci" ] ; then
                     echo "move to my home directory"
                     mkdir -p /home/circleci/.ivy2 /home/circleci/.cache /home/circleci/.sbt /home/circleci/.m2
-                    cp -r /home/circleci/.ivy2 ~/.ivy2
-                    cp -r /home/circleci/.cache ~/.cache
-                    cp -r /home/circleci/.sbt ~/.sbt
-                    cp -r /home/circleci/.m2 ~/.m2
+                    cp -r /home/circleci/.ivy2 ~/
+                    cp -r /home/circleci/.cache ~/
+                    cp -r /home/circleci/.sbt ~/
+                    cp -r /home/circleci/.m2 ~/
                   fi
   save_cache_sbt:
     parameters:
@@ -68,10 +68,10 @@ commands:
                     echo "move to circleci user home directory"
                     mkdir -p ~/.ivy2/cache ~/.cache/coursier ~/.sbt ~/.m2
                     mkdir -p /home/circleci/.ivy2 /home/circleci/.cache
-                    cp -r ~/.ivy2/cache /home/circleci/.ivy2/cache
-                    cp -r ~/.cache/coursier /home/circleci/.cache/coursier
-                    cp -r ~/.sbt /home/circleci/.sbt
-                    cp -r ~/.m2 /home/circleci/.m2
+                    cp -r ~/.ivy2/cache /home/circleci/.ivy2/
+                    cp -r ~/.cache/coursier /home/circleci/.cache/
+                    cp -r ~/.sbt /home/circleci/
+                    cp -r ~/.m2 /home/circleci/
                     # chmod cache directories / available for anyone
                     chmod -R 777 /home/circleci/.ivy2/cache
                     chmod -R 777 /home/circleci/.cache/coursier
