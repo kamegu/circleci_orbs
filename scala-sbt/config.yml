@@ -137,7 +137,7 @@ commands:
           if older than 17.09-ce, chown layer is created and image size will be larger
           https://docs.docker.com/engine/release-notes/#17090-ce
         type: string
-        default: "18.06.0-ce"
+        default: "19.03.8"
       path_from_sbt:
         description: "sbt"
         type: boolean
