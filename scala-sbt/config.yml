@@ -166,7 +166,7 @@ commands:
       - run:
           name: "get docker staging path"
           command: |
-            if [ <<parameters.path_from_sbt>> ]; then
+            if <<parameters.path_from_sbt>> ; then
               # remove ANSI color codes
               sbt << parameters.sbt_subproject >>/docker:stagingDirectory | sed -r 's/[[:cntrl:]]\[[0-9]{1,3}m//g' > sbt_result.txt
               echo "stagingDirectory"
